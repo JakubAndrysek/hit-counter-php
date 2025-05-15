@@ -343,9 +343,19 @@ HTML;
     // Allow customization of the title text
     $title = $_GET['title'] ?? '👀';
 
-    // Render SVG counter
+    // Render SVG counter with clickable link to the selected chart version
+    $chartType = $_GET['chart_type'] ?? 'svg'; // Default to 'svg'
+    // Fix the SVG `onclick` attribute by encoding the URL properly
+    $chartLink = htmlspecialchars("?url=" . urlencode($url) . "&chart=true&chart_type=" . urlencode($chartType), ENT_QUOTES, 'UTF-8');
+
+	$onClick = "";
+	// if not set, do not set the onclick
+	if (isset($_GET['chart_type'])) {
+		$onClick = "onclick=\"window.location.href='$chartLink'\"";
+	}
+
     echo <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="25">
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="25" style="cursor: pointer;" $onClick>
   <rect width="40" height="25" fill="$title_bg" />
   <rect x="40" width="80" height="25" fill="$count_bg" />
   <text x="20" y="17" font-size="12" fill="#FFFFFF" font-family="Arial, sans-serif" text-anchor="middle">$title</text>
