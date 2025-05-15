@@ -184,26 +184,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// // Log access for charts and store total hits
-// if (!$chart) {
-//     // Update total hit count
-//     // Debugging output to check hit count update
-//     error_log("Updating hit count for URL: $url");
-//     $stmt = $pdo->prepare("INSERT INTO hits (url, hits) VALUES (?, 1) ON DUPLICATE KEY UPDATE hits = hits + 1");
-//     $stmt->execute([$url]);
-
-//     // Log access for chart data
-//     $stmt = $pdo->prepare("INSERT INTO access_logs (url) VALUES (?)");
-//     $stmt->execute([$url]);
-
-//     // Delete logs older than 1 year
-//     $pdo->exec("DELETE FROM access_logs WHERE access_time < NOW() - INTERVAL 1 YEAR");
-
-//     // Retrieve current hit count
-//     $stmt = $pdo->prepare("SELECT hits FROM hits WHERE url = ?");
-//     $stmt->execute([$url]);
-//     $count = $stmt->fetchColumn();
-// }
 
 if ($chart) {
     $chartType = $_GET['chart_type'] ?? 'live'; // Default to 'live'
@@ -257,6 +237,12 @@ HTML;
 
         $options = new Options();
         $options->responsive = true;
+        $options->plugins = [
+            'title' => [
+                'display' => true,
+                'text' => "Hits for $url (Total: $totalHits)"
+            ]
+        ];
         $chart->options($options);
 
         echo <<<HTML
@@ -290,7 +276,7 @@ HTML;
         $graph->xaxis->SetTickLabels($dates);
         $graph->xaxis->SetLabelAngle(50);
 
-        $graph->title->Set('Access Logs');
+        $graph->title->Set("Hits for $url (Total: $totalHits)");
         $graph->xaxis->title->Set('Date');
         $graph->yaxis->title->Set('Count');
 
@@ -298,7 +284,8 @@ HTML;
         $graph->img->SetAntiAliasing();
         $graph->Stroke();
     } elseif ($chartType === 'svg') {
-        // Set the correct Content-Type header for SVG output
+        // Ensure no output before SVG rendering
+        ob_clean(); // Clear any previous output buffer
         header('Content-Type: image/svg+xml');
 
         // Generate chart using Maantje Charts
@@ -313,6 +300,7 @@ HTML;
                     bars: $bars,
                 ),
             ],
+            // title: "Access Logs for $url (Total: $totalHits)"
         );
 
         echo $chart->render();
