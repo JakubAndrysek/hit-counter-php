@@ -22,4 +22,4 @@ jobs:
           password: '${{ secrets.FTP_PASSWORD }}'
           localDir: app
           remoteDir: .
-          options: "--delete --ascii"
+          options: "--ascii"

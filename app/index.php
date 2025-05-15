@@ -12,9 +12,13 @@ use Maantje\Charts\Bar\Bar;
 use Maantje\Charts\Bar\Bars;
 use Maantje\Charts\Chart as MaantjeChart;
 
-// Load environment variables from .env file
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+// Check if .env file exists and load environment variables
+if (file_exists(__DIR__ . '/.env')) {
+    $dotenv = Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+} else {
+    error_log(".env file not found. Using system environment variables.");
+}
 
 // Add this block after loading environment variables
 $secretKey = $_ENV['SECRET_KEY'];
