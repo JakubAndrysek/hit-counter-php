@@ -8,6 +8,9 @@ use Bbsnly\ChartJs\Chart;
 use Bbsnly\ChartJs\Config\Data;
 use Bbsnly\ChartJs\Config\Dataset;
 use Bbsnly\ChartJs\Config\Options;
+use Maantje\Charts\Bar\Bar;
+use Maantje\Charts\Bar\Bars;
+use Maantje\Charts\Chart as MaantjeChart;
 
 // Load environment variables from .env file
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -72,6 +75,22 @@ if (!$chart) {
 
 if ($chart) {
     $chartType = $_GET['chart_type'] ?? 'live'; // Default to 'live'
+
+    // Validate chart_type parameter
+    $validChartTypes = ['live', 'png', 'svg'];
+    if (!in_array($chartType, $validChartTypes)) {
+        http_response_code(400); // Bad Request
+        echo <<<HTML
+<html>
+<head><title>Error</title></head>
+<body>
+<h1>400 Bad Request</h1>
+<p>Invalid chart_type parameter. Allowed values are: live, png, svg.</p>
+</body>
+</html>
+HTML;
+        exit;
+    }
 
     if ($chartType === 'live') {
         // Set the correct Content-Type header for HTML output
@@ -144,6 +163,29 @@ HTML;
         $graph->img->SetImgFormat('png');
         $graph->img->SetAntiAliasing();
         $graph->Stroke();
+    } elseif ($chartType === 'svg') {
+        // Set the correct Content-Type header for SVG output
+        header('Content-Type: image/svg+xml');
+
+        // Generate chart using Maantje Charts
+        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
+        $stmt->execute([$url]);
+        $data = $stmt->fetchAll();
+
+        $bars = [];
+        foreach ($data as $row) {
+            $bars[] = new Bar(name: $row['date'], value: $row['count']);
+        }
+
+        $chart = new MaantjeChart(
+            series: [
+                new Bars(
+                    bars: $bars,
+                ),
+            ],
+        );
+
+        echo $chart->render();
     }
 } else {
     // Track hits
