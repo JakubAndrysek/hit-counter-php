@@ -16,6 +16,10 @@ use Maantje\Charts\Chart as MaantjeChart;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+// Add this block after loading environment variables
+$secretKey = $_ENV['SECRET_KEY'];
+
+
 // Retrieve database credentials from environment variables
 $host = $_ENV['DB_HOST'];
 $db = $_ENV['DB_DATABASE'];
@@ -35,6 +39,70 @@ try {
 } catch (PDOException $e) {
     exit('Database error: ' . $e->getMessage());
 }
+
+// Ensure the database connection is established before using $pdo
+if (!isset($pdo)) {
+    exit('Database connection not initialized. Please check your configuration.');
+}
+
+if (isset($_GET['list']) && $_GET['list'] === $secretKey) {
+    // Fetch all saved directories with their hit counts
+    $stmt = $pdo->query("SELECT url, hits FROM hits ORDER BY hits DESC");
+    $rows = $stmt->fetchAll();
+
+    // Debugging output to check if rows are fetched
+    if (empty($rows)) {
+        echo '<p>No data found in the hits table. Please ensure the table is populated.</p>';
+        exit;
+    }
+
+    // Generate HTML response
+    header('Content-Type: text/html');
+    echo <<<HTML
+<html>
+<head><title>Saved Directories</title></head>
+<body>
+<h1>Saved Directories</h1>
+<table border="1">
+    <tr>
+        <th>URL</th>
+        <th>Hits</th>
+        <th>Hit Link</th>
+        <th>Chart Links</th>
+    </tr>
+HTML;
+
+    foreach ($rows as $row) {
+        $url = htmlspecialchars($row['url']);
+        $hits = $row['hits'];
+        $hitLink = "?url=" . urlencode($url);
+        $chartLiveLink = "?url=" . urlencode($url) . "&chart=true&chart_type=live";
+        $chartPngLink = "?url=" . urlencode($url) . "&chart=true&chart_type=png";
+        $chartSvgLink = "?url=" . urlencode($url) . "&chart=true&chart_type=svg";
+
+        echo <<<HTML
+    <tr>
+        <td>{$url}</td>
+        <td>{$hits}</td>
+        <td><a href="{$hitLink}">Hit Link</a></td>
+        <td>
+            <a href="{$chartLiveLink}">Live Chart</a> |
+            <a href="{$chartPngLink}">PNG Chart</a> |
+            <a href="{$chartSvgLink}">SVG Chart</a>
+        </td>
+    </tr>
+HTML;
+    }
+
+    echo <<<HTML
+</table>
+</body>
+</html>
+HTML;
+    exit;
+}
+
+
 
 // Parameters
 $url = $_GET['url'] ?? 'default';
