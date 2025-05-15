@@ -70,6 +70,15 @@ To generate charts, use the `chart` and `chart_type` parameters:
   curl "http://localhost:8000/index.php?url=example.com&chart=true&chart_type=svg"
   ```
 
+### Optional `chart_type` Parameter
+
+The `chart_type` parameter is optional. If not provided, the SVG counter will not include a clickable link. When specified, it determines the type of chart to display when the counter is clicked.
+
+Example:
+```bash
+curl "http://localhost:8000/index.php?url=example.com&chart_type=svg"
+```
+
 ### Customizing the Title
 You can customize the title text displayed in the SVG counter by using the `title` parameter in the URL. If no title is provided, the default is an eye emoji (👀).
 
