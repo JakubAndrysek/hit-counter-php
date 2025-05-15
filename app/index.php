@@ -339,6 +339,17 @@ HTML;
 		$count = 0; // Default to 0 if no count is found
 	}
 
+    // Format the count for display
+    if ($count >= 1000) {
+        if ($count >= 1000000) {
+            $count = round($count / 1000000, 1) . ' M';
+        } else {
+            $count = round($count / 1000, 1) . ' k';
+        }
+    }
+
+    // Allow customization of the title text
+    $title = $_GET['title'] ?? '👀';
 
     // Render SVG counter
     echo <<<SVG

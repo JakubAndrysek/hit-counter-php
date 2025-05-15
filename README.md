@@ -70,6 +70,32 @@ To generate charts, use the `chart` and `chart_type` parameters:
   curl "http://localhost:8000/index.php?url=example.com&chart=true&chart_type=svg"
   ```
 
+### Customizing the Title
+You can customize the title text displayed in the SVG counter by using the `title` parameter in the URL. If no title is provided, the default is an eye emoji (👀).
+
+Example:
+```bash
+curl "http://localhost:8000/index.php?url=example.com&title=CustomTitle"
+```
+
+### Formatting Hit Counts
+Large hit counts are automatically formatted for readability. For example:
+- `1500` is displayed as `1.5 k`
+- `300000` is displayed as `300 k`
+- `1500000` is displayed as `1.5 M`
+
+### Customizing the Counter Appearance
+You can customize the background colors and title text of the SVG counter using the following parameters:
+
+- **`count_bg`**: Sets the background color of the hit count section (default: `#79C83D`).
+- **`title_bg`**: Sets the background color of the title section (default: `#555555`).
+- **`title`**: Sets the title text (default: 👀).
+
+Example:
+```bash
+curl "http://localhost:8000/index.php?url=example.com&count_bg=%23FF5733&title_bg=%23000000&title=Hits"
+```
+
 ### Listing Saved Directories
 To list all saved directories with their hit counts and links, use the `list` parameter with the secret key:
 ```bash
