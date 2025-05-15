@@ -2,6 +2,8 @@
     "require": {
         "vlucas/phpdotenv": "^5.6",
       "ext-pdo": "*",
-        "amenadiel/jpgraph": "^4.1"
+        "amenadiel/jpgraph": "^4.1",
+        "bbsnly/chartjs-php": "^4.0",
+        "maantje/charts": "^0.8.0"
     }
 }

@@ -4,6 +4,10 @@ require __DIR__ . '/vendor/autoload.php'; // Ensure Composer's autoloader is inc
 use Dotenv\Dotenv;
 use Amenadiel\JpGraph\Graph\Graph;
 use Amenadiel\JpGraph\Plot\BarPlot;
+use Bbsnly\ChartJs\Chart;
+use Bbsnly\ChartJs\Config\Data;
+use Bbsnly\ChartJs\Config\Dataset;
+use Bbsnly\ChartJs\Config\Options;
 
 // Load environment variables from .env file
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -36,6 +40,21 @@ $title_bg = $_GET['title_bg'] ?? '#555555';
 $title = $_GET['title'] ?? '👀';
 $chart = isset($_GET['chart']) ? true : false;
 
+// Validate the 'url' parameter
+if (empty($url)) {
+    http_response_code(400); // Bad Request
+    echo <<<HTML
+<html>
+<head><title>Error</title></head>
+<body>
+<h1>400 Bad Request</h1>
+<p>The 'url' parameter is required.</p>
+</body>
+</html>
+HTML;
+    exit;
+}
+
 // Prevent caching
 header('Content-Type: image/svg+xml');
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -52,35 +71,80 @@ if (!$chart) {
 }
 
 if ($chart) {
-    // Generate chart using jpgraph with higher resolution
-    $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
-    $stmt->execute([$url]);
-    $data = $stmt->fetchAll();
+    $chartType = $_GET['chart_type'] ?? 'live'; // Default to 'live'
 
-    $dates = array_column($data, 'date');
-    $counts = array_column($data, 'count');
+    if ($chartType === 'live') {
+        // Set the correct Content-Type header for HTML output
+        header('Content-Type: text/html');
 
-    $width = 800; // Increased width for higher resolution
-    $height = 400; // Increased height for higher resolution
+        // Generate chart using ChartJS-PHP
+        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
+        $stmt->execute([$url]);
+        $data = $stmt->fetchAll();
 
-    $graph = new Graph($width, $height);
-    $graph->SetScale('textlin');
+        $dates = array_column($data, 'date');
+        $counts = array_column($data, 'count');
 
-    $barplot = new BarPlot($counts);
-    $barplot->SetFillColor('#79C83D');
+        $chart = new Chart;
+        $chart->type = 'bar';
 
-    $graph->Add($barplot);
-    $graph->xaxis->SetTickLabels($dates);
-    $graph->xaxis->SetLabelAngle(50);
+        $chartData = new Data();
+        $chartData->labels = $dates;
 
-    $graph->title->Set('Access Logs');
-    $graph->xaxis->title->Set('Date');
-    $graph->yaxis->title->Set('Count');
+        $dataset = new Dataset();
+        $dataset->data = $counts;
+        $dataset->backgroundColor = '#79C83D';
+        $chartData->datasets[] = $dataset;
 
-    // Output as PNG for better compatibility
-    $graph->img->SetImgFormat('png');
-    $graph->img->SetAntiAliasing(); // Enable anti-aliasing for smoother visuals
-    $graph->Stroke();
+        $chart->data($chartData);
+
+        $options = new Options();
+        $options->responsive = true;
+        $chart->options($options);
+
+        echo <<<HTML
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div>
+    <canvas id="myChart"></canvas>
+</div>
+<script>
+    const ctx = document.getElementById('myChart');
+    new Chart(ctx, {$chart->toJson()});
+</script>
+HTML;
+    } elseif ($chartType === 'png') {
+        // Set the correct Content-Type header for PNG output
+        header('Content-Type: image/png');
+
+        // Generate chart using jpgraph
+        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
+        $stmt->execute([$url]);
+        $data = $stmt->fetchAll();
+
+        $dates = array_column($data, 'date');
+        $counts = array_column($data, 'count');
+
+        $width = 800;
+        $height = 400;
+
+        $graph = new Graph($width, $height);
+        $graph->SetScale('textlin');
+
+        $barplot = new BarPlot($counts);
+        $barplot->SetFillColor('#79C83D');
+
+        $graph->Add($barplot);
+        $graph->xaxis->SetTickLabels($dates);
+        $graph->xaxis->SetLabelAngle(50);
+
+        $graph->title->Set('Access Logs');
+        $graph->xaxis->title->Set('Date');
+        $graph->yaxis->title->Set('Count');
+
+        $graph->img->SetImgFormat('png');
+        $graph->img->SetAntiAliasing();
+        $graph->Stroke();
+    }
 } else {
     // Track hits
     $stmt = $pdo->prepare("INSERT INTO hits (url, hits) VALUES (?, 1) ON DUPLICATE KEY UPDATE hits = hits + 1");

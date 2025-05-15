@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6941515c0dff3417b52092e5c71afbca",
+    "content-hash": "2eb1eb86bc4052f5da2c67cbc35750dd",
     "packages": [
         {
             "name": "amenadiel/jpgraph",
@@ -79,6 +79,54 @@
             "time": "2021-04-27T19:09:11+00:00"
         },
         {
+            "name": "bbsnly/chartjs-php",
+            "version": "v4.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/bbsnly/chartjs-php.git",
+                "reference": "23af1a1ec169ffdb978f5365448532a383f57af7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/bbsnly/chartjs-php/zipball/23af1a1ec169ffdb978f5365448532a383f57af7",
+                "reference": "23af1a1ec169ffdb978f5365448532a383f57af7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.0"
+            },
+            "type": "package",
+            "autoload": {
+                "psr-4": {
+                    "Bbsnly\\ChartJs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Anatoliy Babushka",
+                    "email": "anatoliybabushka@gmail.com"
+                }
+            ],
+            "description": "PHP wrapper for Chart.js library",
+            "homepage": "https://github.com/bbsnly/chartjs-php",
+            "keywords": [
+                "chartjs",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/bbsnly/chartjs-php/issues",
+                "source": "https://github.com/bbsnly/chartjs-php/tree/v4.0.1"
+            },
+            "time": "2024-07-31T18:22:44+00:00"
+        },
+        {
             "name": "graham-campbell/result-type",
             "version": "v1.1.3",
             "source": {
@@ -139,6 +187,56 @@
                 }
             ],
             "time": "2024-07-20T21:45:45+00:00"
+        },
+        {
+            "name": "maantje/charts",
+            "version": "v0.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maantje/charts.git",
+                "reference": "65831379d5250e7242bc49ffa487ad028b5d7310"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maantje/charts/zipball/65831379d5250e7242bc49ffa487ad028b5d7310",
+                "reference": "65831379d5250e7242bc49ffa487ad028b5d7310",
+                "shasum": ""
+            },
+            "require-dev": {
+                "laravel/pint": "^1.17",
+                "mpdf/mpdf": "^8.2",
+                "pestphp/pest": "^2.35",
+                "phpstan/phpstan": "^1.12",
+                "symfony/var-dumper": "^7.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Maantje\\Charts\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jamie Schouten",
+                    "email": "j4mie@hey.com"
+                }
+            ],
+            "description": "SVG Charts in PHP",
+            "support": {
+                "issues": "https://github.com/maantje/charts/issues",
+                "source": "https://github.com/maantje/charts/tree/v0.8.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/maantje",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-01-26T17:50:58+00:00"
         },
         {
             "name": "phpoption/phpoption",
