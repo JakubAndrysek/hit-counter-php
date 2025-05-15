@@ -46,8 +46,8 @@ if (!isset($pdo)) {
 }
 
 if (isset($_GET['list']) && $_GET['list'] === $secretKey) {
-    // Fetch all saved directories with their hit counts
-    $stmt = $pdo->query("SELECT url, hits FROM hits ORDER BY hits DESC");
+    // Fetch the count of hits stored for 1 year for each URL
+    $stmt = $pdo->query("SELECT url, hits, (SELECT COUNT(*) FROM access_logs WHERE access_logs.url = hits.url AND access_time >= NOW() - INTERVAL 1 YEAR) AS yearly_hits FROM hits ORDER BY hits DESC");
     $rows = $stmt->fetchAll();
 
     // Debugging output to check if rows are fetched
@@ -66,29 +66,52 @@ if (isset($_GET['list']) && $_GET['list'] === $secretKey) {
 <table border="1">
     <tr>
         <th>URL</th>
-        <th>Hits</th>
+        <th>Total Hits</th>
+        <th>Hits (1 Year)</th>
         <th>Hit Link</th>
         <th>Chart Links</th>
+        <th>Remove Records</th>
+        <th>Set Visit Count</th>
     </tr>
 HTML;
 
+// Add buttons for removing records and setting visit count
     foreach ($rows as $row) {
         $url = htmlspecialchars($row['url']);
         $hits = $row['hits'];
+        $yearlyHits = $row['yearly_hits'];
         $hitLink = "?url=" . urlencode($url);
         $chartLiveLink = "?url=" . urlencode($url) . "&chart=true&chart_type=live";
         $chartPngLink = "?url=" . urlencode($url) . "&chart=true&chart_type=png";
         $chartSvgLink = "?url=" . urlencode($url) . "&chart=true&chart_type=svg";
+        $removeLink = "?action=remove&url=" . urlencode($url) . "&confirm=1";
+        $setCountLink = "?action=set_count&url=" . urlencode($url);
 
         echo <<<HTML
     <tr>
         <td>{$url}</td>
         <td>{$hits}</td>
+        <td>{$yearlyHits}</td>
         <td><a href="{$hitLink}">Hit Link</a></td>
         <td>
             <a href="{$chartLiveLink}">Live Chart</a> |
             <a href="{$chartPngLink}">PNG Chart</a> |
             <a href="{$chartSvgLink}">SVG Chart</a>
+        </td>
+        <td>
+            <form method="POST" action="">
+                <input type="hidden" name="action" value="remove">
+                <input type="hidden" name="url" value="{$url}">
+                <button type="submit" onclick="return confirm('Are you sure you want to remove all records for this URL?');">Remove</button>
+            </form>
+        </td>
+        <td>
+            <form method="POST" action="">
+                <input type="hidden" name="action" value="set_count">
+                <input type="hidden" name="url" value="{$url}">
+                <input type="number" name="new_count" min="0" placeholder="Set new count">
+                <button type="submit">Set Count</button>
+            </form>
         </td>
     </tr>
 HTML;
@@ -99,6 +122,30 @@ HTML;
 </body>
 </html>
 HTML;
+
+    // Handle POST actions for removing records and setting visit count
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $action = $_POST['action'] ?? '';
+        $url = $_POST['url'] ?? '';
+
+        if ($action === 'remove' && !empty($url)) {
+            $stmt = $pdo->prepare("DELETE FROM hits WHERE url = ?");
+            $stmt->execute([$url]);
+
+            $stmt = $pdo->prepare("DELETE FROM access_logs WHERE url = ?");
+            $stmt->execute([$url]);
+
+            echo '<p>All records for the URL have been removed.</p>';
+        } elseif ($action === 'set_count' && !empty($url)) {
+            $newCount = (int) ($_POST['new_count'] ?? 0);
+
+            $stmt = $pdo->prepare("INSERT INTO hits (url, hits) VALUES (?, ?) ON DUPLICATE KEY UPDATE hits = ?");
+            $stmt->execute([$url, $newCount, $newCount]);
+
+            echo '<p>The visit count has been updated.</p>';
+        }
+    }
+
     exit;
 }
 
@@ -110,6 +157,11 @@ $count_bg = $_GET['count_bg'] ?? '#79C83D';
 $title_bg = $_GET['title_bg'] ?? '#555555';
 $title = $_GET['title'] ?? '👀';
 $chart = isset($_GET['chart']) ? true : false;
+
+// Exclude 'favicon.ico' from being counted
+if ($url === 'favicon.ico') {
+    exit;
+}
 
 // Validate the 'url' parameter
 if (empty($url)) {
@@ -132,14 +184,26 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Log access only if not showing the chart
-if (!$chart) {
-    $stmt = $pdo->prepare("INSERT INTO access_logs (url) VALUES (?)");
-    $stmt->execute([$url]);
+// // Log access for charts and store total hits
+// if (!$chart) {
+//     // Update total hit count
+//     // Debugging output to check hit count update
+//     error_log("Updating hit count for URL: $url");
+//     $stmt = $pdo->prepare("INSERT INTO hits (url, hits) VALUES (?, 1) ON DUPLICATE KEY UPDATE hits = hits + 1");
+//     $stmt->execute([$url]);
 
-    // Delete logs older than 6 months
-    $pdo->exec("DELETE FROM access_logs WHERE access_time < NOW() - INTERVAL 6 MONTH");
-}
+//     // Log access for chart data
+//     $stmt = $pdo->prepare("INSERT INTO access_logs (url) VALUES (?)");
+//     $stmt->execute([$url]);
+
+//     // Delete logs older than 1 year
+//     $pdo->exec("DELETE FROM access_logs WHERE access_time < NOW() - INTERVAL 1 YEAR");
+
+//     // Retrieve current hit count
+//     $stmt = $pdo->prepare("SELECT hits FROM hits WHERE url = ?");
+//     $stmt->execute([$url]);
+//     $count = $stmt->fetchColumn();
+// }
 
 if ($chart) {
     $chartType = $_GET['chart_type'] ?? 'live'; // Default to 'live'
@@ -160,17 +224,23 @@ HTML;
         exit;
     }
 
+    // Fetch total hit count from the `hits` table
+    $stmt = $pdo->prepare("SELECT hits FROM hits WHERE url = ?");
+    $stmt->execute([$url]);
+    $totalHits = $stmt->fetchColumn() ?? 0;
+
+    // Fetch chart data from the `access_logs` table for the past year
+    $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? AND access_time >= NOW() - INTERVAL 1 YEAR GROUP BY DATE(access_time)");
+    $stmt->execute([$url]);
+    $chartData = $stmt->fetchAll();
+
     if ($chartType === 'live') {
         // Set the correct Content-Type header for HTML output
         header('Content-Type: text/html');
 
         // Generate chart using ChartJS-PHP
-        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
-        $stmt->execute([$url]);
-        $data = $stmt->fetchAll();
-
-        $dates = array_column($data, 'date');
-        $counts = array_column($data, 'count');
+        $dates = array_column($chartData, 'date');
+        $counts = array_column($chartData, 'count');
 
         $chart = new Chart;
         $chart->type = 'bar';
@@ -204,12 +274,8 @@ HTML;
         header('Content-Type: image/png');
 
         // Generate chart using jpgraph
-        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
-        $stmt->execute([$url]);
-        $data = $stmt->fetchAll();
-
-        $dates = array_column($data, 'date');
-        $counts = array_column($data, 'count');
+        $dates = array_column($chartData, 'date');
+        $counts = array_column($chartData, 'count');
 
         $width = 800;
         $height = 400;
@@ -236,12 +302,8 @@ HTML;
         header('Content-Type: image/svg+xml');
 
         // Generate chart using Maantje Charts
-        $stmt = $pdo->prepare("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE url = ? GROUP BY DATE(access_time)");
-        $stmt->execute([$url]);
-        $data = $stmt->fetchAll();
-
         $bars = [];
-        foreach ($data as $row) {
+        foreach ($chartData as $row) {
             $bars[] = new Bar(name: $row['date'], value: $row['count']);
         }
 
@@ -256,14 +318,27 @@ HTML;
         echo $chart->render();
     }
 } else {
-    // Track hits
+    // Update total hit count
+    // Debugging output to check hit count update
+    error_log("Updating hit count for URL: $url");
     $stmt = $pdo->prepare("INSERT INTO hits (url, hits) VALUES (?, 1) ON DUPLICATE KEY UPDATE hits = hits + 1");
     $stmt->execute([$url]);
+
+    // Log access for chart data
+    $stmt = $pdo->prepare("INSERT INTO access_logs (url) VALUES (?)");
+    $stmt->execute([$url]);
+
+    // Delete logs older than 1 year
+    $pdo->exec("DELETE FROM access_logs WHERE access_time < NOW() - INTERVAL 1 YEAR");
 
     // Retrieve current hit count
     $stmt = $pdo->prepare("SELECT hits FROM hits WHERE url = ?");
     $stmt->execute([$url]);
     $count = $stmt->fetchColumn();
+	if ($count === false) {
+		$count = 0; // Default to 0 if no count is found
+	}
+
 
     // Render SVG counter
     echo <<<SVG
