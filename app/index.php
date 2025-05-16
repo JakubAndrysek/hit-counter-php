@@ -521,7 +521,15 @@ HTML;
 	}
 
     // Fetch the user's IP address
-    $ip = $_SERVER['REMOTE_ADDR'];
+    // $ip = $_SERVER['REMOTE_ADDR'];
+
+	if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+		$ip = $_SERVER['HTTP_CLIENT_IP'];
+	} else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	} else {
+		$ip = $_SERVER['REMOTE_ADDR'];
+	}
 
     // Handle loopback IP addresses
     if ($ip === 'x::1' || $ip === '127.0.0.1') {

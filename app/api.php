@@ -14,6 +14,24 @@ if (!file_exists($versionFilePath)) {
 // Read the version code from the file
 $versionCode = trim(file_get_contents($versionFilePath));
 
-// Return the version code as a JSON response
+// Determine the user's IP address
+if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+    $ip = $_SERVER['HTTP_CLIENT_IP'];
+} else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+} else {
+    $ip = $_SERVER['REMOTE_ADDR'];
+}
+
+// Call the counter API to log the IP address
+$counterApiUrl = "https://api.country.is/$ip";
+$counterApiResponse = @file_get_contents($counterApiUrl);
+$counterApiData = @json_decode($counterApiResponse, true);
+
+// Include the IP address and counter API response in the output
 header('Content-Type: application/json');
-echo json_encode(["version" => $versionCode]);
+echo json_encode([
+    "version" => $versionCode,
+    "ip" => $ip,
+    "counterApiResponse" => $counterApiData
+]);
