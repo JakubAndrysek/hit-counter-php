@@ -299,7 +299,8 @@ HTML;
 }
 
 if (isset($_GET['country_chart']) && $_GET['country_chart'] === $secretKey) {
-    $urlFilter = $_GET['url'] ?? null; // Check if a specific URL is provided
+    // Check if a specific URL is provided for filtering
+    $urlFilter = $_GET['url'] ?? null;
 
     if ($urlFilter) {
         // Fetch country distribution data for the specific URL
@@ -311,11 +312,6 @@ if (isset($_GET['country_chart']) && $_GET['country_chart'] === $secretKey) {
     }
 
     $countryData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$countryData) {
-        echo '<p>No data found for the specified URL or in the hits table.</p>';
-        exit;
-    }
 
     // Prepare data for the chart
     $labels = json_encode(array_keys($countryData));
