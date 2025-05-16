@@ -120,7 +120,7 @@ HTML;
                 <a href="{$chartLiveLink}" class="btn btn-success btn-sm">Live Chart</a>
                 <a href="{$chartPngLink}" class="btn btn-warning btn-sm">PNG Chart</a>
                 <a href="{$chartSvgLink}" class="btn btn-info btn-sm">SVG Chart</a>
-                <a href="{$countryChartLink}" class="btn btn-secondary btn-sm">Country Chart</a>
+                <a href="{$countryChartLink}&url={$url}" class="btn btn-secondary btn-sm">Country Chart</a>
             </td>
             <td>
                 <form method="POST" action="">
@@ -211,6 +211,10 @@ HTML;
     echo <<<HTML
     </tbody>
 </table>
+<h2 class="mt-5">Generic Country Distribution</h2>
+<div>
+    <a href="?country_chart={$secretKey}" class="btn btn-primary">View Generic Country Chart</a>
+</div>
 HTML;
 
     // Add a JavaScript-based chart at the end of the page to display last year's visit data
