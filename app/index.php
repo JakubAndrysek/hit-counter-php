@@ -215,6 +215,11 @@ HTML;
 <div>
     <a href="?country_chart={$secretKey}" class="btn btn-primary">View Generic Country Chart</a>
 </div>
+
+<h2 class="mt-5">API</h2>
+<div>
+    <a href="api.php" class="btn btn-primary">API</a>
+</div>
 HTML;
 
     // Add a JavaScript-based chart at the end of the page to display last year's visit data
