@@ -210,6 +210,122 @@ HTML;
 </table>
 HTML;
 
+    // Add a JavaScript-based chart at the end of the page to display last year's visit data
+
+    // Fetch chart data for the last year
+    $stmt = $pdo->query("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE access_time >= NOW() - INTERVAL 1 YEAR GROUP BY DATE(access_time) ORDER BY date ASC");
+    $chartData = $stmt->fetchAll();
+
+    // Prepare data for the JavaScript chart
+    $dates = json_encode(array_column($chartData, 'date'));
+    $counts = json_encode(array_column($chartData, 'count'));
+
+    // Add the chart container and script
+    echo <<<HTML
+<h2 class="mt-5">Last Year's Visit Data</h2>
+<div>
+    <canvas id="yearlyChart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('yearlyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: $dates,
+            datasets: [{
+                label: 'Visits',
+                data: $counts,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Last Year's Visit Data"
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Visits'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+HTML;
+
+    // Add a section for the JavaScript-based chart at the end of the page
+    // Fetch data for the chart
+    $stmt = $pdo->query("SELECT DATE(access_time) as date, COUNT(*) as count FROM access_logs WHERE access_time >= NOW() - INTERVAL 1 YEAR GROUP BY DATE(access_time) ORDER BY date ASC");
+    $chartData = $stmt->fetchAll();
+
+    $dates = json_encode(array_column($chartData, 'date'));
+    $counts = json_encode(array_column($chartData, 'count'));
+
+    // Add the chart container and script
+    echo <<<HTML
+<h2 class="mt-5">Last Year's Visit Data</h2>
+<div>
+    <canvas id="yearlyVisitChart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('yearlyVisitChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: $dates,
+            datasets: [{
+                label: 'Visits',
+                data: $counts,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Visits Over the Last Year"
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Number of Visits'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+HTML;
+
     // Handle POST actions for removing records and setting visit count
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
