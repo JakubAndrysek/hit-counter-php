@@ -299,9 +299,23 @@ HTML;
 }
 
 if (isset($_GET['country_chart']) && $_GET['country_chart'] === $secretKey) {
-    // Fetch country distribution data
-    $stmt = $pdo->query("SELECT DE, AT, CZ, SK, PL, US, UK, FR, IT, ES, NL, BE, SE, NO, FI, DK, CH, PT, IE, CN, RU, `IN`, OTHER FROM hits");
+    $urlFilter = $_GET['url'] ?? null; // Check if a specific URL is provided
+
+    if ($urlFilter) {
+        // Fetch country distribution data for the specific URL
+        $stmt = $pdo->prepare("SELECT DE, AT, CZ, SK, PL, US, UK, FR, IT, ES, NL, BE, SE, NO, FI, DK, CH, PT, IE, CN, RU, `IN`, OTHER FROM hits WHERE url = ?");
+        $stmt->execute([$urlFilter]);
+    } else {
+        // Fetch country distribution data for all URLs
+        $stmt = $pdo->query("SELECT DE, AT, CZ, SK, PL, US, UK, FR, IT, ES, NL, BE, SE, NO, FI, DK, CH, PT, IE, CN, RU, `IN`, OTHER FROM hits");
+    }
+
     $countryData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$countryData) {
+        echo '<p>No data found for the specified URL or in the hits table.</p>';
+        exit;
+    }
 
     // Prepare data for the chart
     $labels = json_encode(array_keys($countryData));
