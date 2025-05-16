@@ -1,5 +1,9 @@
 # Hit Counter PHP Application
 
+<p align="center">
+  <img height="25px" src="https://hit.kubaandrysek.cz/?url=https://github.com/JakubAndrysek/hit-counter-php&chart_type=live"/>
+</p>
+
 This application is a simple PHP-based hit counter that tracks and displays the number of hits for specific URLs. It also supports generating charts in multiple formats to visualize the data.
 
 ## Features
