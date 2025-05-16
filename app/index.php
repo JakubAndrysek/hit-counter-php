@@ -97,6 +97,7 @@ if (isset($_GET['list']) && $_GET['list'] === $secretKey) {
     </thead>
     <tbody>
 HTML;
+    // Add a button in the list view to open the country chart view
     foreach ($rows as $row) {
         $url = htmlspecialchars($row['url']);
         $hits = $row['hits'];
@@ -104,7 +105,8 @@ HTML;
         $hitLink = "?url=" . urlencode($url);
         $chartLiveLink = "?url=" . urlencode($url) . "&chart=true&chart_type=live";
         $chartPngLink = "?url=" . urlencode($url) . "&chart=true&chart_type=png";
-        $chartSvgLink = "?url=" . urlencode($url) . "&chart=true&chart_type=svg";
+        $chartSvgLink = "?url=" . urlencode($url) . "&chart_type=svg";
+        $countryChartLink = "?country_chart=$secretKey";
         $removeLink = "?action=remove&url=" . urlencode($url) . "&confirm=1";
         $setCountLink = "?action=set_count&url=" . urlencode($url);
 
@@ -118,6 +120,7 @@ HTML;
                 <a href="{$chartLiveLink}" class="btn btn-success btn-sm">Live Chart</a>
                 <a href="{$chartPngLink}" class="btn btn-warning btn-sm">PNG Chart</a>
                 <a href="{$chartSvgLink}" class="btn btn-info btn-sm">SVG Chart</a>
+                <a href="{$countryChartLink}" class="btn btn-secondary btn-sm">Country Chart</a>
             </td>
             <td>
                 <form method="POST" action="">
@@ -295,6 +298,51 @@ HTML;
     exit;
 }
 
+if (isset($_GET['country_chart']) && $_GET['country_chart'] === $secretKey) {
+    // Fetch country distribution data
+    $stmt = $pdo->query("SELECT DE, AT, CZ, SK, PL, US, UK, FR, IT, ES, NL, BE, SE, NO, FI, DK, CH, PT, IE, CN, RU, `IN`, OTHER FROM hits");
+    $countryData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Prepare data for the chart
+    $labels = json_encode(array_keys($countryData));
+    $values = json_encode(array_values($countryData));
+
+    // Render the chart
+    echo <<<HTML
+<h2 class="mt-5">Country Distribution</h2>
+<div>
+    <canvas id="countryChart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('countryChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: $labels,
+            datasets: [{
+                label: 'Hits by Country',
+                data: $values,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#C9CBCF', '#FF9F40', '#FFCD56', '#4BC0C0', '#36A2EB', '#9966FF', '#C9CBCF', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#C9CBCF', '#FF9F40', '#FFCD56', '#4BC0C0', '#36A2EB', '#9966FF', '#C9CBCF'],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Hits by Country'
+                }
+            }
+        }
+    });
+</script>
+HTML;
+    exit;
+}
 
 // Validate the 'url' parameter
 if (!isset($_GET['url']) || empty($_GET['url'])) {
@@ -471,6 +519,42 @@ HTML;
 	if ($count === false) {
 		$count = 0; // Default to 0 if no count is found
 	}
+
+    // Fetch the user's IP address
+    $ip = $_SERVER['REMOTE_ADDR'];
+
+    // Handle loopback IP addresses
+    if ($ip === 'x::1' || $ip === '127.0.0.1') {
+        $countryCode = 'OTHER';
+    } else {
+        // Fetch the country code using the external API
+        $apiUrl = "https://api.country.is/$ip";
+        $response = @file_get_contents($apiUrl);
+        $countryData = @json_decode($response, true);
+
+        // Check if the API response contains an error or is invalid
+        if (isset($countryData['error']) || !$countryData) {
+            $countryCode = 'OTHER';
+        } else {
+            $countryCode = $countryData['country'] ?? 'OTHER';
+        }
+    }
+
+    // Add China, Russia, and India to the country column logic
+    $countryColumn = in_array($countryCode, ['DE', 'AT', 'CZ', 'SK', 'PL', 'US', 'UK', 'FR', 'IT', 'ES', 'NL', 'BE', 'SE', 'NO', 'FI', 'DK', 'CH', 'PT', 'IE', 'CN', 'RU', 'IN']) ? $countryCode : 'OTHER';
+
+    // Wrap the country column update in a try-catch block
+    try {
+        // Update the country column in the hits table
+        $stmt = $pdo->prepare("UPDATE hits SET $countryColumn = $countryColumn + 1 WHERE url = ?");
+        $stmt->execute([$url]);
+
+        // Ensure the country column exists in the hits table
+        $pdo->exec("ALTER TABLE hits ADD COLUMN IF NOT EXISTS $countryColumn INT NOT NULL DEFAULT 0");
+    } catch (PDOException $e) {
+        // Log the error and proceed without updating
+        error_log("Failed to update country column: " . $e->getMessage());
+    }
 
     // Format the count for display
     if ($count >= 1000) {

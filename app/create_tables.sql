@@ -1,9 +1,34 @@
 USE `hits`;
 
--- Create or update the hits table to store total hit counts
-CREATE TABLE IF NOT EXISTS hits (
+-- Drop the hits table if it exists and create a new one
+DROP TABLE IF EXISTS hits;
+
+CREATE TABLE hits (
     url VARCHAR(255) PRIMARY KEY,
-    hits INT NOT NULL DEFAULT 0
+    hits INT NOT NULL DEFAULT 0,
+    DE INT NOT NULL DEFAULT 0,
+    AT INT NOT NULL DEFAULT 0,
+    CZ INT NOT NULL DEFAULT 0,
+    SK INT NOT NULL DEFAULT 0,
+    PL INT NOT NULL DEFAULT 0,
+    US INT NOT NULL DEFAULT 0,
+    UK INT NOT NULL DEFAULT 0,
+    FR INT NOT NULL DEFAULT 0,
+    IT INT NOT NULL DEFAULT 0,
+    ES INT NOT NULL DEFAULT 0,
+    NL INT NOT NULL DEFAULT 0,
+    BE INT NOT NULL DEFAULT 0,
+    SE INT NOT NULL DEFAULT 0,
+    NO INT NOT NULL DEFAULT 0,
+    FI INT NOT NULL DEFAULT 0,
+    DK INT NOT NULL DEFAULT 0,
+    CH INT NOT NULL DEFAULT 0,
+    PT INT NOT NULL DEFAULT 0,
+    IE INT NOT NULL DEFAULT 0,
+    CN INT NOT NULL DEFAULT 0,
+    RU INT NOT NULL DEFAULT 0,
+    `IN` INT NOT NULL DEFAULT 0,
+    OTHER INT NOT NULL DEFAULT 0
 );
 
 -- Create or update the access_logs table to store chart data for up to 1 year
