@@ -154,19 +154,6 @@ HTML;
 }
 
 
-
-// Parameters
-$url = $_GET['url'] ?? 'default';
-$count_bg = $_GET['count_bg'] ?? '#79C83D';
-$title_bg = $_GET['title_bg'] ?? '#555555';
-$title = $_GET['title'] ?? '👀';
-$chart = isset($_GET['chart']) ? true : false;
-
-// Exclude 'favicon.ico' from being counted
-if ($url === 'favicon.ico') {
-    exit;
-}
-
 // Validate the 'url' parameter
 if (empty($url)) {
     http_response_code(400); // Bad Request
@@ -179,6 +166,18 @@ if (empty($url)) {
 </body>
 </html>
 HTML;
+    exit;
+}
+
+// Parameters
+$url = $_GET['url'];
+$count_bg = $_GET['count_bg'] ?? '#79C83D';
+$title_bg = $_GET['title_bg'] ?? '#555555';
+$title = $_GET['title'] ?? '👀';
+$chart = isset($_GET['chart']) ? true : false;
+
+// Exclude 'favicon.ico' from being counted
+if ($url === 'favicon.ico') {
     exit;
 }
 
