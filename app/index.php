@@ -60,26 +60,43 @@ if (isset($_GET['list']) && $_GET['list'] === $secretKey) {
         exit;
     }
 
-    // Generate HTML response
-    header('Content-Type: text/html');
-    echo <<<HTML
-<html>
-<head><title>Saved Directories</title></head>
-<body>
-<h1>Saved Directories</h1>
-<table border="1">
-    <tr>
-        <th>URL</th>
-        <th>Total Hits</th>
-        <th>Hits (1 Year)</th>
-        <th>Hit Link</th>
-        <th>Chart Links</th>
-        <th>Remove Records</th>
-        <th>Set Visit Count</th>
-    </tr>
-HTML;
+    // Calculate interesting statistics
+    $totalHits = array_sum(array_column($rows, 'hits'));
+    $averageHits = $totalHits > 0 ? round($totalHits / count($rows), 2) : 0;
+    $mostVisited = !empty($rows) ? max(array_column($rows, 'hits')) : 0;
 
-// Add buttons for removing records and setting visit count
+    // Add Bootstrap 5 layout with borders and frame
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Directories</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container my-4 border border-dark rounded p-4">
+<h1 class="text-center mb-4">Saved Directories</h1>
+<h2>Statistics</h2>
+<ul class="list-group mb-4">
+    <li class="list-group-item">Total Hits: {$totalHits}</li>
+    <li class="list-group-item">Average Hits per URL: {$averageHits}</li>
+    <li class="list-group-item">Most Visited URL Hits: {$mostVisited}</li>
+</ul>
+<table class="table table-striped border border-secondary rounded">
+    <thead class="table-dark">
+        <tr>
+            <th>URL</th>
+            <th>Total Hits</th>
+            <th>Hits (1 Year)</th>
+            <th>Hit Link</th>
+            <th>Chart Links</th>
+            <th>Remove Records</th>
+            <th>Set Visit Count</th>
+        </tr>
+    </thead>
+    <tbody>
+HTML;
     foreach ($rows as $row) {
         $url = htmlspecialchars($row['url']);
         $hits = $row['hits'];
@@ -92,39 +109,105 @@ HTML;
         $setCountLink = "?action=set_count&url=" . urlencode($url);
 
         echo <<<HTML
-    <tr>
-        <td>{$url}</td>
-        <td>{$hits}</td>
-        <td>{$yearlyHits}</td>
-        <td><a href="{$hitLink}">Hit Link</a></td>
-        <td>
-            <a href="{$chartLiveLink}">Live Chart</a> |
-            <a href="{$chartPngLink}">PNG Chart</a> |
-            <a href="{$chartSvgLink}">SVG Chart</a>
-        </td>
-        <td>
-            <form method="POST" action="">
-                <input type="hidden" name="action" value="remove">
-                <input type="hidden" name="url" value="{$url}">
-                <button type="submit" onclick="return confirm('Are you sure you want to remove all records for this URL?');">Remove</button>
-            </form>
-        </td>
-        <td>
-            <form method="POST" action="">
-                <input type="hidden" name="action" value="set_count">
-                <input type="hidden" name="url" value="{$url}">
-                <input type="number" name="new_count" min="0" placeholder="Set new count">
-                <button type="submit">Set Count</button>
-            </form>
-        </td>
-    </tr>
+        <tr>
+            <td>{$url}</td>
+            <td>{$hits}</td>
+            <td>{$yearlyHits}</td>
+            <td><a href="{$hitLink}" class="btn btn-primary btn-sm">Hit Link</a></td>
+            <td>
+                <a href="{$chartLiveLink}" class="btn btn-success btn-sm">Live Chart</a>
+                <a href="{$chartPngLink}" class="btn btn-warning btn-sm">PNG Chart</a>
+                <a href="{$chartSvgLink}" class="btn btn-info btn-sm">SVG Chart</a>
+            </td>
+            <td>
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="remove">
+                    <input type="hidden" name="url" value="{$url}">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove all records for this URL?');">Remove</button>
+                </form>
+            </td>
+            <td>
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="set_count">
+                    <input type="hidden" name="url" value="{$url}">
+                    <input type="number" name="new_count" min="0" placeholder="Set new count" class="form-control form-control-sm">
+                    <button type="submit" class="btn btn-secondary btn-sm mt-2">Set Count</button>
+                </form>
+            </td>
+        </tr>
 HTML;
     }
-
     echo <<<HTML
+    </tbody>
 </table>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+HTML;
+
+    // Fetch top 20 URLs by hits with their last access time
+    $topHitsStmt = $pdo->query("SELECT h.url, h.hits, MAX(a.access_time) as last_access FROM hits h LEFT JOIN access_logs a ON h.url = a.url GROUP BY h.url ORDER BY h.hits DESC LIMIT 20");
+    $topHits = $topHitsStmt->fetchAll();
+
+    // Fetch last 20 distinct pages with their last access time and total hits
+    $lastPagesStmt = $pdo->query("SELECT h.url, MAX(a.access_time) as last_access, h.hits FROM access_logs a LEFT JOIN hits h ON a.url = h.url GROUP BY a.url ORDER BY last_access DESC LIMIT 20");
+    $lastPages = $lastPagesStmt->fetchAll();
+
+    // Add Bootstrap 5 styling to the tables
+    echo <<<HTML
+<h2 class="mt-5">Top 20 URLs by Hits</h2>
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>URL</th>
+            <th>Total Hits</th>
+            <th>Last Access Time</th>
+        </tr>
+    </thead>
+    <tbody>
+HTML;
+    foreach ($topHits as $row) {
+        $url = htmlspecialchars($row['url']);
+        $hits = $row['hits'];
+        $lastAccess = $row['last_access'] ?? 'N/A';
+        echo <<<HTML
+        <tr>
+            <td>{$url}</td>
+            <td>{$hits}</td>
+            <td>{$lastAccess}</td>
+        </tr>
+HTML;
+    }
+    echo <<<HTML
+    </tbody>
+</table>
+
+<h2 class="mt-5">Last 20 Distinct Pages and Their Last Access Time</h2>
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>URL</th>
+            <th>Last Access Time</th>
+            <th>Total Hits</th>
+        </tr>
+    </thead>
+    <tbody>
+HTML;
+    foreach ($lastPages as $row) {
+        $url = htmlspecialchars($row['url']);
+        $lastAccess = $row['last_access'] ?? 'N/A';
+        $hits = $row['hits'] ?? 0;
+        echo <<<HTML
+        <tr>
+            <td>{$url}</td>
+            <td>{$lastAccess}</td>
+            <td>{$hits}</td>
+        </tr>
+HTML;
+    }
+    echo <<<HTML
+    </tbody>
+</table>
 HTML;
 
     // Handle POST actions for removing records and setting visit count
