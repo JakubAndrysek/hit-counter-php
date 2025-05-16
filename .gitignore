@@ -29,3 +29,4 @@ vendor/
 
 .env*
 .env.local
+.local/
