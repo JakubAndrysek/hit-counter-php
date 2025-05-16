@@ -155,7 +155,7 @@ HTML;
 
 
 // Validate the 'url' parameter
-if (empty($url)) {
+if (empty($_GET['url'])) {
     http_response_code(400); // Bad Request
     echo <<<HTML
 <html>
